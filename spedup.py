@@ -1,5 +1,5 @@
 from pydub import AudioSegment
-from pydub.playback import play
+from tkinter import Tk, filedialog, Label, Entry, Button, messagebox
 import os
 import logging
 
@@ -26,35 +26,69 @@ def adjust_audio_speed(input_file, speed_factor, output_file):
         
         # 조정된 오디오 저장
         new_audio.export(output_file, format="mp3")
-        print(f"속도 조정된 파일이 저장되었습니다: {output_file}")
+        messagebox.showinfo("완료", f"속도 조정된 파일이 저장되었습니다: {output_file}")
     
     except FileNotFoundError:
         # 입력 파일이 존재하지 않을 때의 예외 처리
         error_message = f"파일을 찾을 수 없습니다: {input_file}"
-        print(error_message)
+        messagebox.showerror("오류", error_message)
         logging.error(error_message)
     
     except Exception as e:
         # 기타 예외 처리
         error_message = f"오류 발생: {str(e)}"
-        print(error_message)
+        messagebox.showerror("오류", error_message)
         logging.error(error_message)
 
-if __name__ == "__main__":
-    # 사용자 입력 받기
-    input_file = input("오디오 파일 경로를 입력하세요: ")  # 예: example.mp3
+def select_file():
+    """파일 탐색기에서 파일을 선택합니다."""
+    file_path = filedialog.askopenfilename(
+        title="오디오 파일 선택",
+        filetypes=[("Audio Files", "*.mp3 *.wav *.ogg *.flac")]
+    )
+    input_path_entry.delete(0, "end")
+    input_path_entry.insert(0, file_path)
+
+def process_audio():
+    """GUI를 통해 입력받은 정보를 바탕으로 오디오 처리"""
+    input_file = input_path_entry.get()
+    speed_factor = speed_entry.get()
+    
+    if not input_file:
+        messagebox.showerror("오류", "오디오 파일을 선택하세요.")
+        return
+    
     try:
-        speed_factor = float(input("배속 값을 입력하세요 (예: 1.5): "))  # 예: 1.5
+        speed_factor = float(speed_factor)
         if speed_factor <= 0:
             raise ValueError("배속 값은 0보다 커야 합니다.")
     except ValueError as ve:
-        print(f"잘못된 입력입니다: {ve}")
-        logging.error(f"잘못된 배속 입력: {ve}")
-        exit()
-    
+        messagebox.showerror("오류", f"잘못된 배속 값: {ve}")
+        return
+
     # 출력 파일 이름 설정 (배속 값 포함)
     base, ext = os.path.splitext(input_file)
     output_file = f"{base}_sped_up_{speed_factor}x{ext}"
     
     # 속도 조정 함수 호출
     adjust_audio_speed(input_file, speed_factor, output_file)
+
+# Tkinter GUI 설정
+root = Tk()
+root.title("Sped up Maker")
+root.geometry("400x200")
+
+# GUI 구성 요소
+Label(root, text="오디오 파일 경로:").pack(pady=5)
+input_path_entry = Entry(root, width=50)
+input_path_entry.pack(pady=5)
+Button(root, text="파일 선택", command=select_file).pack(pady=5)
+
+Label(root, text="배속 값 (예: 1.5):").pack(pady=5)
+speed_entry = Entry(root, width=10)
+speed_entry.pack(pady=5)
+
+Button(root, text="처리 시작", command=process_audio).pack(pady=20)
+
+# GUI 실행
+root.mainloop()
